@@ -1,12 +1,21 @@
 package com.ghovos.yygh.hosp.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.ghovos.yygh.common.result.Result;
 import com.ghovos.yygh.hosp.service.HospitalSetService;
 import com.ghovos.yygh.model.hosp.HospitalSet;
+import com.ghovos.yygh.vo.hosp.HospitalQueryVo;
+import com.mysql.cj.util.StringUtils;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+
+@Api(tags = "医院设置管理")
 @RestController
 @RequestMapping("/admin/hosp/hospitalSet")
 public class HospitalSetController {
@@ -19,25 +28,75 @@ public class HospitalSetController {
 
     /**
      * 1. 查询医院设置表中所有信息
+     *
      * @return 所有医院
      */
+    @ApiOperation(value = "获取所有的医院设置")
     @GetMapping("findAll")
-    public List<HospitalSet> findAllHospitalSet() {
-        return hospitalSetService.list();
+    public Result findAllHospitalSet() {
+        List<HospitalSet> list = hospitalSetService.list();
+        return Result.ok(list);
     }
 
     /**
      * 2. 根据id删除医院(逻辑删除)
+     *
      * @param id 要删除的id
      * @return 是否删除成功
      */
-    @DeleteMapping("{id")
-    public boolean removeHospSet(@PathVariable Long id){
+    @ApiOperation(value = "逻辑删除医院设置")
+    @DeleteMapping("{id}")
+    public Result removeHospSet(@PathVariable Long id) {
         boolean flag = hospitalSetService.removeById(id);
-        return flag;
+        if (flag) {
+            return Result.ok();
+        } else {
+            return Result.fail();
+        }
+    }
+
+    /**
+     * 3. 条件查询带分页
+     */
+    @PostMapping("findPage/{current}/{limit}")
+    public Result findPageHospSet(@PathVariable long current,
+                                  @PathVariable long limit,
+                                  @RequestBody(required = false) HospitalQueryVo hospitalQueryVo) {
+        //创建page对象，传递当前页
+        Page<HospitalSet> page = new Page<>(current, limit);
+
+        //构建条件
+        QueryWrapper<HospitalSet> wrapper = new QueryWrapper<>();
+
+        String hosname = hospitalQueryVo.getHosname();
+        String hoscode = hospitalQueryVo.getHoscode();
+
+
+        // 判断是否为空
+        if (!StringUtils.isNullOrEmpty(hosname)) {
+            wrapper.like("hosname", hospitalQueryVo.getHosname());
+        }
+        if (!StringUtils.isNullOrEmpty(hoscode)) {
+            wrapper.eq("hoscode", hospitalQueryVo.getHoscode());
+
+        }
+
+        //调用方法实现分页查询
+        Page<HospitalSet> pageHospitalSet = hospitalSetService.page(page, wrapper);
+
+        //返回结果
+        return Result.ok(pageHospitalSet);
     }
 
 
+    /**
+     * 3. 添加医院设置
+     */
+
+
+    /**
+     * 5. 根据id
+     */
 
 
 }
